@@ -1,0 +1,13 @@
+name = "NamedVecs"
+uuid = "908e0916-443c-4019-9297-bb79488edb5a"
+authors = ["Per Rutquist <per.rutquist@gmail.com> and contributors"]
+version = "0.1.0"
+
+[compat]
+julia = "1.7"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
