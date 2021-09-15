@@ -1,5 +1,7 @@
 module NamedVecs
 
+export NamedVec
+
 """
 A `NamedVec` is a kind of hybrid between a `Vector` and a `NamedTuple`. This can be useful, 
 for example, in mathematical modelling where collections of parameters are some times treated 
@@ -19,16 +21,15 @@ f(v) # returns [4, 5]
 ```
 
 """
-struct NamedVec{T,Names,D<:AbstractVector{T},I,F} <: AbstractVector{T}
+struct NamedVec{T,Names,D<:AbstractVector{T},M} <: AbstractVector{T}
     data::D
-    indices::NamedTuple{Names, I}
-    unvecs::NamedTuple{Names, F}
+    maps::NamedTuple{Names, M}
 end
 
 # Constructors
 
-function NamedVec(data::AbstractVector, names::NTuple{N, Symbol}, indices::Tuple{Vararg{Any,N}}, unvecs::Tuple{Vararg{Any,N}}) where {N}
-    NamedVec(data, NamedTuple{names}(indices), NamedTuple{names}(unvecs))
+function NamedVec(data::AbstractVector, names::NTuple{N, Symbol}, maps::Tuple{Vararg{Any,N}}) where {N}
+    NamedVec(data, NamedTuple{names}(maps))
 end
 
 """
@@ -38,8 +39,9 @@ function NamedVec(xs::NamedTuple{Names, <:Tuple{AbstractArray, Vararg{AbstractAr
     ns = map(length, Tuple(xs))
     lastix = cumsum(ns)
     firstix = lastix .- ns .+ 1
-    data = similar(first(xs), (sum(ns),))
-    v = NamedVec(data, Names, ntuple(i->firstix[i]:lastix[i], length(xs)), viewfun.(Tuple(xs)))
+    T = promote_type(eltype.(Tuple(xs))...)
+    data = similar(first(xs), T, (sum(ns),))
+    v = NamedVec(data, Names, ntuple(i->(firstix[i]:lastix[i] => viewfun(xs[i])), length(xs)))
     for n in Names
         getproperty(v, n) .= getproperty(xs, n)
     end
@@ -56,7 +58,7 @@ function viewfun(x::AbstractArray)
     end
 end
 
-viewfun(x::AbstractVector) = identity
+viewfun(::AbstractVector) = identity
 
 # Conversion
 
@@ -66,7 +68,7 @@ Base.vec(v::NamedVec) = getfield(v, :data)
 "oftype(x::NamedVec, y) converts a vector y into a NamedVec with the names and indices of x"
 function Base.oftype(v::NamedVec{Names, <:Tuple{Vararg{AbstractArray}}}, w::AbstractVector) where {Names}
     @boundscheck eachindex(v) == eachindex(w) || error("Size missmatch.")
-    NamedVec(w, indices(v), unvecs(v))
+    NamedVec(w, maps(v))
 end
 
 """
@@ -75,7 +77,7 @@ For a tuple of the elements of the vector, use `Tuple(vec(v))`.
 """
 function Base.Tuple(v::NamedVec) 
     let data=vec(v)
-        map((i,f)->f(data[i]), Tuple(getfield(v, :indices)), Tuple(getfield(v, :unvecs)))
+        map(m->m[2](view(data, m[1])), maps(v))
     end
 end
 
@@ -96,17 +98,21 @@ Base.eachindex(v::NamedVec) = eachindex(vec(v))
 Base.eltype(v::NamedVec) = eltype(vec(v))
 Base.size(v::NamedVec) = size(vec(v))
 Base.size(v::NamedVec, dim::Integer) = size(vec(v), dim)
+Base.getindex(v::NamedVec, ix::Integer) = getindex(vec(v), ix)
+Base.setindex!(v::NamedVec, y, ix::Integer) = setindex!(vec(v), y, ix)
 
 #Base.:*(a::Number, v::NamedVec) = NamedVec(a * vec(v),
 
 # NamedTuple-like
 
-Base.getproperty(v::NamedVec, s::Symbol) = view(vec(v), getproperty(indices(v), s)) |> getproperty(unvecs(v), s)
+function Base.getproperty(v::NamedVec, s::Symbol) 
+    ix, f = getproperty(maps(v), s)
+    f(view(vec(v), ix))
+end
 
 # Utility functions
 # (These are unexported and mainly for internal use)
 
-indices(v::NamedVec) = getfield(v, :indices)
-unvecs(v::NamedVec) = getfield(v, :unvecs)
+maps(v::NamedVec) = getfield(v, :maps)
 
 end # modulev
