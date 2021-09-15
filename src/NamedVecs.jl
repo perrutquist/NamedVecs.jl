@@ -16,10 +16,9 @@ Example:
 ```
 v = NamedVec((a=[1], b=[2, 3]))
 v' * v # returns 14
-f((;a, b)) = 2a .+ b
+f((;a, b)) = 2a .+ b # This notation requires Julia 1.7
 f(v) # returns [4, 5]
 ```
-
 """
 struct NamedVec{T,Names,D<:AbstractVector{T},M} <: AbstractVector{T}
     data::D
@@ -93,15 +92,17 @@ end
 
 # Vector-like
 
+Base.eltype(::NamedVec{T}) where {T} = T
 Base.length(v::NamedVec) = length(vec(v))
 Base.eachindex(v::NamedVec) = eachindex(vec(v))
-Base.eltype(v::NamedVec) = eltype(vec(v))
 Base.size(v::NamedVec) = size(vec(v))
 Base.size(v::NamedVec, dim::Integer) = size(vec(v), dim)
 Base.getindex(v::NamedVec, ix::Integer) = getindex(vec(v), ix)
 Base.setindex!(v::NamedVec, y, ix::Integer) = setindex!(vec(v), y, ix)
 
-#Base.:*(a::Number, v::NamedVec) = NamedVec(a * vec(v),
+Base.:*(a::Number, v::NamedVec) = NamedVec(a * vec(v), maps(v))
+
+# Vector-like broadcasting
 
 # NamedTuple-like
 
