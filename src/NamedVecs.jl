@@ -34,21 +34,29 @@ end
 """
 A `NamedVec` can be created from a `NamedTuple` of arrays. The arrays are copied (not aliased) into the new object.
 """
-function NamedVec(xs::NamedTuple{Names, <:Tuple{Any, Vararg{Any}}}) where {Names}
+function NamedVec(::Type{T}, xs::NamedTuple{Names, <:Tuple{Any, Vararg{Any}}}) where {T<:AbstractVector, Names}
     ns = map(length, Tuple(xs)) # TODO: should look at number of elements actually used.
     lastix = cumsum(ns)
     firstix = lastix .- ns .+ 1
-    T = promote_type(eltype.(Tuple(xs))...)
-    data = similar(first(xs), T, (sum(ns),))
-    viewpair(i) = (xs[i] isa Real ? firstix[i] : firstix[i]:lastix[i]) => viewfun(xs[i])
-    v = NamedVec(data, Names, ntuple(viewpair, length(xs)))
+    data = similar(T isa UnionAll ? T{promote_type(eltype.(Tuple(xs))...)} : T, (sum(ns),))
+    maps = ntuple(length(xs)) do i
+        (xs[i] isa Real ? firstix[i] : firstix[i]:lastix[i]) => viewfun(xs[i])
+    end
+    v = NamedVec(data, Names, maps)
     for n in Names
         setproperty!(v, n, getproperty(xs, n))
     end
     v
 end
 
-NamedVec(; kwargs...) = NamedVec(kwargs)
+"NamedVec, if the vector type is not specified, uses `Vector`."
+function NamedVec(xs::NamedTuple{Names, <:Tuple{Any, Vararg{Any}}}) where {Names}
+    E = promote_type(eltype.(Tuple(xs))...)
+    NamedVec(Vector{E}, xs)
+end
+
+NamedVec(::Type{T}; kwargs...) where {T<:AbstractVector} = NamedVec(T, NamedTuple(kwargs))
+NamedVec(; kwargs...) = NamedVec(NamedTuple(kwargs))
 
 """
 `viewfun(x)` - Returns a function that create an object that is like `x`, from a vector 
