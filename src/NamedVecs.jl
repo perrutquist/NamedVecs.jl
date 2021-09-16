@@ -114,8 +114,37 @@ Base.getindex(v::NamedVec, ix::Integer) = getindex(vec(v), ix)
 Base.setindex!(v::NamedVec, y, ix::Integer) = setindex!(vec(v), y, ix)
 
 Base.:*(a::Number, v::NamedVec) = NamedVec(a * vec(v), maps(v))
+Base.:+(a::NamedVec{Names}, b::NamedVec{Names}) where {Names} = NamedVec(vec(a) + vec(b), maps(a))
+
+Base.similar(a::NamedVec) = NamedVec(similar(vec(a)), maps(a)) 
+Base.copy(a::NamedVec) = NamedVec(copy(vec(a)), maps(a)) 
 
 # Vector-like broadcasting
+
+struct NamedVecStyle <: Broadcast.AbstractArrayStyle{1}
+end
+
+Base.Broadcast.BroadcastStyle(::Type{<:NamedVec}) = NamedVecStyle()
+Base.Broadcast.BroadcastStyle(a::NamedVecs.NamedVecStyle, ::Base.Broadcast.DefaultArrayStyle{0}) = a
+Base.Broadcast.BroadcastStyle(a::NamedVecs.NamedVecStyle, ::Base.Broadcast.DefaultArrayStyle{1}) = a
+Base.Broadcast.BroadcastStyle(::NamedVecs.NamedVecStyle, b::Base.Broadcast.DefaultArrayStyle) = b
+
+function Base.similar(bc::Broadcast.Broadcasted{NamedVecStyle}, ::Type{T}) where {T}
+    # TOOD: We should maybe check that there are not conflicting sets of names.
+    v = getnv(bc)
+    NamedVec(similar(vec(v), T), maps(v))
+end
+
+"getnv extracts the first NamedVec it can find in a Broadcasted object"
+getnv(::Any) = nothing
+getnv(x::NamedVec) = x
+function getnv(bc::Broadcast.Broadcasted{NamedVecStyle})
+    for a in bc.args
+        y = getnv(a)
+        y isa NamedVec && return y
+    end
+    nothing
+end
 
 # NamedTuple-like
 
