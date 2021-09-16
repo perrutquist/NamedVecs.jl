@@ -1,6 +1,6 @@
 # What are NamedVecs ?
 
-This package provides a type called a `NamedVec`, which is a subtype of `AbstractVector`, but which also has some of the traits of a `NamedTuple`.
+This package provides a type called *NamedVec*, which is a subtype of *AbstractVector*, but which also has some of the traits of a *NamedTuple*.
 
 For example, `p = NamedVec(x=1.0, y=2.0)` will create an object that behaves like the vector `[1.0, 2.0]`, but where the fields `p.x`, and `p.y` can also be accessed individually.
 
