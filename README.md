@@ -1,10 +1,14 @@
+# Note
+
+It seems [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl) does exactly what this package was intened to do, so it is not likely that it will be developed further.
+
 # What are NamedVecs ?
 
 This package provides a type called *NamedVec*, which is a subtype of *AbstractVector*, but which also has some of the traits of a *NamedTuple*.
 
 For example, `p = NamedVec(x=1.0, y=2.0)` will create an object that behaves like the vector `[1.0, 2.0]`, but where the fields `p.x`, and `p.y` can also be accessed individually.
 
-The fields can either be scalars, arrays, or other `NamedVec`s. (More types might be supported in the future.)
+The fields can either be scalars, arrays, or other *NamedVec*s. (More types might be supported in the future.)
 
 Example:
 ```
