@@ -21,6 +21,6 @@ tspan = (0.0, 10.0)
 sol = solve(ODEProblem(f, u0, tspan))
 ```
 
-The fields `position` and `velocity` are defined when `u0` is created. They simply pass through the DifferentialEquations code (which knows nothing about NamedVecs) until `u` reaches our function `f` that uses those field names to get views into parts of the vector. The returned `udot` is also a `NamedVec`, which the ODE solver treats just like any other vector. 
+The fields `position` and `velocity` are defined when `u0` is created. They simply pass through the DifferentialEquations code (which knows nothing about NamedVecs) until `u` reaches our function `f` that uses those field names to get views into parts of the vector. The returned $\partial u / \partial t$ is also a `NamedVec`, which the ODE solver treats just like any other vector. 
 
 If we wanted to work with 3D position/velocity instead, we would only need to define a new `u0`. There would be no need to pass sizes as a separate parameter to `f`.
