@@ -34,18 +34,21 @@ end
 """
 A `NamedVec` can be created from a `NamedTuple` of arrays. The arrays are copied (not aliased) into the new object.
 """
-function NamedVec(xs::NamedTuple{Names, <:Tuple{AbstractArray, Vararg{AbstractArray}}}) where {Names}
-    ns = map(length, Tuple(xs))
+function NamedVec(xs::NamedTuple{Names, <:Tuple{Any, Vararg{Any}}}) where {Names}
+    ns = map(length, Tuple(xs)) # TODO: should look at number of elements actually used.
     lastix = cumsum(ns)
     firstix = lastix .- ns .+ 1
     T = promote_type(eltype.(Tuple(xs))...)
     data = similar(first(xs), T, (sum(ns),))
-    v = NamedVec(data, Names, ntuple(i->(firstix[i]:lastix[i] => viewfun(xs[i])), length(xs)))
+    viewpair(i) = (xs[i] isa Real ? firstix[i] : firstix[i]:lastix[i]) => viewfun(xs[i])
+    v = NamedVec(data, Names, ntuple(viewpair, length(xs)))
     for n in Names
-        getproperty(v, n) .= getproperty(xs, n)
+        setproperty!(v, n, getproperty(xs, n))
     end
     v
 end
+
+NamedVec(; kwargs...) = NamedVec(kwargs)
 
 """
 `viewfun(x)` - Returns a function that create an object that is like `x`, from a vector 
@@ -57,7 +60,9 @@ function viewfun(x::AbstractArray)
     end
 end
 
-viewfun(::AbstractVector) = identity
+viewfun(::AbstractVector{<:Real}) = identity
+
+viewfun(::Real) = getindex
 
 # Conversion
 
@@ -106,13 +111,24 @@ Base.:*(a::Number, v::NamedVec) = NamedVec(a * vec(v), maps(v))
 
 # NamedTuple-like
 
+Base.propertynames(::NamedVec{<:Any, Names}, ::Bool=false) where {Names} = Names
+
 function Base.getproperty(v::NamedVec, s::Symbol) 
     ix, f = getproperty(maps(v), s)
     f(view(vec(v), ix))
 end
 
+function Base.setproperty!(v::NamedVec, s::Symbol, y) 
+    ix, f = getproperty(maps(v), s)
+    if f === getindex
+        vec(v)[ix] = y
+    else
+        f(view(vec(v), ix)) .= y
+    end
+end
+
 # Utility functions
-# (These are unexported and mainly for internal use)
+# (Unexported and mainly for internal use)
 
 maps(v::NamedVec) = getfield(v, :maps)
 
