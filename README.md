@@ -1,6 +1,6 @@
 # Note
 
-It seems [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl) does exactly what this package was intened to do, so it is not likely that it will be developed further.
+It seems [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl) does exactly what this package was intened to do, so it is not likely that NamedVecs.jl will be developed further.
 
 # What are NamedVecs ?
 
