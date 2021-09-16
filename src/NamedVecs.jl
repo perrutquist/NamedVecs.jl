@@ -68,6 +68,12 @@ function viewfun(x::AbstractArray)
     end
 end
 
+function viewfun(x::NamedVec)
+    let m = maps(x)
+        v -> NamedVec(v, m)
+    end
+end 
+
 viewfun(::AbstractVector{<:Real}) = identity
 
 viewfun(::Real) = getindex
